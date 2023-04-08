@@ -22,7 +22,7 @@ describe("Uniswap V2", function () {
   let tokenB: IERC20;
   let tokenFlashUSDC: IERC20;
 
-  beforeEach(async function () {
+  before(async function () {
     [this.owner, this.investor] = await ethers.getSigners();
     // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
     this.whale = await ethers.getImpersonatedSigner(DAI_WHALE);

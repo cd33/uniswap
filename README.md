@@ -1,4 +1,4 @@
-# uniswapV2
+# uniswap
 Project to discover and master Uniswap V2 and V3
 
 ## Installation:
