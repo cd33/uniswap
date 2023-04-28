@@ -36,19 +36,19 @@ contract LiquidityExamples is IERC721Receiver {
 
     // Implementing `onERC721Received` so this contract can receive custody of erc721 tokens
     function onERC721Received(
-        address operator,
+        address _operator,
         address,
         uint _tokenId,
         bytes calldata
     ) external override returns (bytes4) {
-        _createDeposit(operator, _tokenId);
+        _createDeposit(_operator, _tokenId);
         return this.onERC721Received.selector;
     }
 
     function _createDeposit(address owner, uint _tokenId) internal {
         (, , address token0, address token1, , , , uint128 liquidity, , , , ) =
-            nonfungiblePositionManager.positions(tokenId);
-            
+            nonfungiblePositionManager.positions(_tokenId);
+
         // set the owner and data for position
         // operator is msg.sender
         deposits[_tokenId] = Deposit({ 
@@ -68,9 +68,9 @@ contract LiquidityExamples is IERC721Receiver {
         external
         returns (
             uint _tokenId,
-            uint128 liquidity,
-            uint amount0,
-            uint amount1
+            uint128 _liquidity,
+            uint _amount0,
+            uint _amount1
         )
     {
         // For this example, we will provide equal amounts of liquidity in both assets.
@@ -110,35 +110,35 @@ contract LiquidityExamples is IERC721Receiver {
 
         // Note that the pool defined by DAI/USDC and fee tier 0.01% must 
         // already be created and initialized in order to mint
-        (_tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager
+        (_tokenId, _liquidity, _amount0, _amount1) = nonfungiblePositionManager
             .mint(params);
 
         // Create a deposit
         _createDeposit(msg.sender, _tokenId);
 
         // Remove allowance and refund in both assets.
-        if (amount0 < amount0ToMint) {
+        if (_amount0 < amount0ToMint) {
             TransferHelper.safeApprove(
                 DAI,
                 address(nonfungiblePositionManager),
                 0
             );
-            uint refund0 = amount0ToMint - amount0;
+            uint refund0 = amount0ToMint - _amount0;
             TransferHelper.safeTransfer(DAI, msg.sender, refund0);
         }
 
-        if (amount1 < amount1ToMint) {
+        if (_amount1 < amount1ToMint) {
             TransferHelper.safeApprove(
                 USDC,
                 address(nonfungiblePositionManager),
                 0
             );
-            uint refund1 = amount1ToMint - amount1;
+            uint refund1 = amount1ToMint - _amount1;
             TransferHelper.safeTransfer(USDC, msg.sender, refund1);
         }
     }
 
-    function collectAllFees() external returns (uint256 amount0, uint256 amount1) {
+    function collectAllFees() external returns (uint256 _amount0, uint256 _amount1) {
         // set amount0Max and amount1Max to uint256.max to collect all fees
         // alternatively can set recipient to msg.sender and avoid another transaction in `sendToOwner`
         INonfungiblePositionManager.CollectParams memory params =
@@ -149,15 +149,15 @@ contract LiquidityExamples is IERC721Receiver {
                 amount1Max: type(uint128).max
             });
 
-        (amount0, amount1) = nonfungiblePositionManager.collect(params);
+        (_amount0, _amount1) = nonfungiblePositionManager.collect(params);
 
-        console.log("fee 0", amount0);
-        console.log("fee 1", amount1);
+        console.log("fee 0", _amount0);
+        console.log("fee 1", _amount1);
     }
 
     function increaseLiquidityCurrentRange(
-        uint256 amountAdd0,
-        uint256 amountAdd1
+        uint256 _amountAdd0,
+        uint256 _amountAdd1
     )
         external
         returns (
@@ -166,17 +166,17 @@ contract LiquidityExamples is IERC721Receiver {
             uint256 amount1
         )
     {
-        TransferHelper.safeTransferFrom(DAI, msg.sender, address(this), amountAdd0);
-        TransferHelper.safeTransferFrom(USDC, msg.sender, address(this), amountAdd1);
+        TransferHelper.safeTransferFrom(DAI, msg.sender, address(this), _amountAdd0);
+        TransferHelper.safeTransferFrom(USDC, msg.sender, address(this), _amountAdd1);
 
-        TransferHelper.safeApprove(DAI, address(nonfungiblePositionManager), amountAdd0);
-        TransferHelper.safeApprove(USDC, address(nonfungiblePositionManager), amountAdd1);
+        TransferHelper.safeApprove(DAI, address(nonfungiblePositionManager), _amountAdd0);
+        TransferHelper.safeApprove(USDC, address(nonfungiblePositionManager), _amountAdd1);
 
         INonfungiblePositionManager.IncreaseLiquidityParams memory params =
             INonfungiblePositionManager.IncreaseLiquidityParams({
                 tokenId: tokenId,
-                amount0Desired: amountAdd0,
-                amount1Desired: amountAdd1,
+                amount0Desired: _amountAdd0,
+                amount1Desired: _amountAdd1,
                 amount0Min: 0,
                 amount1Min: 0,
                 deadline: block.timestamp
@@ -190,28 +190,16 @@ contract LiquidityExamples is IERC721Receiver {
     }
 
     function getLiquidity(uint _tokenId) external view returns (uint128) {
-        (
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            ,
-            uint128 liquidity,
-            ,
-            ,
-            ,
-
-        ) = nonfungiblePositionManager.positions(_tokenId);
+        (, , , , , , , uint128 liquidity, , , , ) =
+            nonfungiblePositionManager.positions(_tokenId);
         return liquidity;
     }
 
-    function decreaseLiquidity(uint128 liquidity) external returns (uint amount0, uint amount1) {
+    function decreaseLiquidity(uint128 _liquidity) external returns (uint amount0, uint amount1) {
         INonfungiblePositionManager.DecreaseLiquidityParams memory params =
             INonfungiblePositionManager.DecreaseLiquidityParams({
                 tokenId: tokenId,
-                liquidity: liquidity,
+                liquidity: _liquidity,
                 amount0Min: 0,
                 amount1Min: 0,
                 deadline: block.timestamp
